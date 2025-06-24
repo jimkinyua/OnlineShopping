@@ -26,6 +26,10 @@ namespace OnlineShopping.Data
                 new Product { Id = 3, Name = "Keyboard", Price = 79.99m }
             );
 
+            // Fixed dates for promotions to avoid dynamic DateTime.UtcNow
+            var startDate = new DateTime(2023, 1, 1);
+            var endDate = new DateTime(2024, 1, 1);
+
             // Seed data for promotions
             modelBuilder.Entity<Promotion>().HasData(
                 new Promotion
@@ -36,8 +40,8 @@ namespace OnlineShopping.Data
                     Type = PromotionType.PercentageDiscount,
                     DiscountValue = 20,
                     TargetSegment = CustomerSegment.VIP,
-                    StartDate = DateTime.UtcNow.AddMonths(-1),
-                    EndDate = DateTime.UtcNow.AddMonths(12),
+                    StartDate = startDate,
+                    EndDate = endDate,
                     IsActive = true,
                     Priority = 10
                 },
@@ -49,8 +53,8 @@ namespace OnlineShopping.Data
                     Type = PromotionType.PercentageDiscount,
                     DiscountValue = 10,
                     TargetSegment = CustomerSegment.Premium,
-                    StartDate = DateTime.UtcNow.AddMonths(-1),
-                    EndDate = DateTime.UtcNow.AddMonths(12),
+                    StartDate = startDate,
+                    EndDate = endDate,
                     IsActive = true,
                     Priority = 5
                 },
@@ -63,8 +67,8 @@ namespace OnlineShopping.Data
                     DiscountValue = 50,
                     MinimumOrderCount = 5,
                     MinimumPurchaseAmount = 200,
-                    StartDate = DateTime.UtcNow.AddMonths(-1),
-                    EndDate = DateTime.UtcNow.AddMonths(12),
+                    StartDate = startDate,
+                    EndDate = endDate,
                     IsActive = true,
                     Priority = 8
                 },
@@ -76,8 +80,8 @@ namespace OnlineShopping.Data
                     Type = PromotionType.PercentageDiscount,
                     DiscountValue = 15,
                     MinimumPurchaseAmount = 500,
-                    StartDate = DateTime.UtcNow.AddMonths(-1),
-                    EndDate = DateTime.UtcNow.AddMonths(12),
+                    StartDate = startDate,
+                    EndDate = endDate,
                     IsActive = true,
                     Priority = 7
                 }

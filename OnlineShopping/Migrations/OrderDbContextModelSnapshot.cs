@@ -39,7 +39,7 @@ namespace OnlineShopping.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Customers");
+                    b.ToTable("Customers", (string)null);
                 });
 
             modelBuilder.Entity("OnlineShopping.Models.Order", b =>
@@ -66,7 +66,7 @@ namespace OnlineShopping.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Orders");
+                    b.ToTable("Orders", (string)null);
                 });
 
             modelBuilder.Entity("OnlineShopping.Models.Product", b =>
@@ -84,7 +84,7 @@ namespace OnlineShopping.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
 
                     b.HasData(
                         new
