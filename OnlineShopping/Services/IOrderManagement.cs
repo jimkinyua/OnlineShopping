@@ -4,6 +4,6 @@ namespace OnlineShopping.Services
 {
     public interface IOrderManagement
     {
-        Task<Order> CreateOrderAsync(int customerId, decimal totalAmount);
+        Task<Order> CreateOrderAsync(int customerId, decimal subtotalAmount);
     }
 }

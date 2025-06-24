@@ -13,6 +13,7 @@ namespace OnlineShopping
             builder.Services.AddDbContext<OrderDbContext>(options => options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             // custom services
+            builder.Services.AddScoped<IDiscountService, DiscountService>();
             builder.Services.AddScoped<IOrderManagement, OrderManagement>();
             builder.Services.AddScoped<ICustomerManagement, CustomerManagement>();
 
