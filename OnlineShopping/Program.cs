@@ -14,6 +14,7 @@ namespace OnlineShopping
 
             // custom services
             builder.Services.AddScoped<IOrderManagement, OrderManagement>();
+            builder.Services.AddScoped<ICustomerManagement, CustomerManagement>();
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
