@@ -27,7 +27,7 @@ namespace OnlineShopping
             using (var scope = app.Services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<OrderDbContext>();
-                dbContext.Database.EnsureCreated();
+                //dbContext.Database.EnsureCreated();
                 dbContext.Database.Migrate();
             }
 

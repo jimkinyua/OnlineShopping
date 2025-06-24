@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OnlineShopping.Data;
 
@@ -10,9 +11,11 @@ using OnlineShopping.Data;
 namespace OnlineShopping.Migrations
 {
     [DbContext(typeof(OrderDbContext))]
-    partial class OrderDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250624121812_DiscountSetUpTables")]
+    partial class DiscountSetUpTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.6");
@@ -41,7 +44,7 @@ namespace OnlineShopping.Migrations
 
                     b.HasIndex("PromotionId");
 
-                    b.ToTable("AppliedDiscounts", (string)null);
+                    b.ToTable("AppliedDiscounts");
                 });
 
             modelBuilder.Entity("OnlineShopping.Models.Customer", b =>
@@ -66,7 +69,7 @@ namespace OnlineShopping.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Customers", (string)null);
+                    b.ToTable("Customers");
                 });
 
             modelBuilder.Entity("OnlineShopping.Models.Order", b =>
@@ -101,7 +104,7 @@ namespace OnlineShopping.Migrations
 
                     b.HasIndex("CustomerId");
 
-                    b.ToTable("Orders", (string)null);
+                    b.ToTable("Orders");
                 });
 
             modelBuilder.Entity("OnlineShopping.Models.Product", b =>
@@ -119,7 +122,7 @@ namespace OnlineShopping.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Products", (string)null);
+                    b.ToTable("Products");
 
                     b.HasData(
                         new
@@ -185,7 +188,7 @@ namespace OnlineShopping.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Promotions", (string)null);
+                    b.ToTable("Promotions");
 
                     b.HasData(
                         new
