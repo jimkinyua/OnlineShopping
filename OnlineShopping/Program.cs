@@ -1,3 +1,6 @@
+using Microsoft.EntityFrameworkCore;
+using OnlineShopping.Data;
+using OnlineShopping.Services;
 
 namespace OnlineShopping
 {
@@ -7,16 +10,24 @@ namespace OnlineShopping
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
+            builder.Services.AddDbContext<OrderDbContext>(options => options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+            // custom services
+            builder.Services.AddScoped<IOrderManagement, OrderManagement>();
 
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
+            // Ensure database is created before the program runs
+            using (var scope = app.Services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<OrderDbContext>();
+                dbContext.Database.EnsureCreated();
+            }
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
