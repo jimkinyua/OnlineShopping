@@ -26,14 +26,14 @@ namespace OnlineShopping.Migrations
                 nullable: false,
                 defaultValue: 0m);
 
-            migrationBuilder.AddColumn<decimal>(
+           /* migrationBuilder.AddColumn<decimal>(
                 name: "SubTotal",
                 table: "Orders",
                 type: "TEXT",
                 precision: 18,
                 scale: 2,
                 nullable: false,
-                defaultValue: 0m);
+                defaultValue: 0m);*/
 
             migrationBuilder.AddColumn<decimal>(
                 name: "TotalDiscount",
@@ -102,7 +102,7 @@ namespace OnlineShopping.Migrations
                     table.PrimaryKey("PK_PromotionRules", x => x.Id);
                 });
 
-            migrationBuilder.CreateTable(
+            /*migrationBuilder.CreateTable(
                 name: "AppliedDiscounts",
                 columns: table => new
                 {
@@ -130,7 +130,7 @@ namespace OnlineShopping.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
+*/
             migrationBuilder.InsertData(
                 table: "PromotionRules",
                 columns: new[] { "Id", "BuyQuantity", "Criteria", "CriteriaValue", "Description", "DiscountValue", "EndDate", "GetQuantity", "IsActive", "IsCombinable", "MaxUsesPerCustomer", "MinimumOrderAmount", "MinimumOrderCount", "MinimumTotalSpent", "Name", "Priority", "StartDate", "Type" },
@@ -143,10 +143,10 @@ namespace OnlineShopping.Migrations
                     { 5, null, 2, null, "$100 off for customers who have spent over $5000", 100m, null, null, true, true, 1, null, null, 5000m, "Big Spender Bonus", 1, new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), 1 }
                 });
 
-            migrationBuilder.CreateIndex(
+            /*migrationBuilder.CreateIndex(
                 name: "IX_AppliedDiscounts_OrderId",
                 table: "AppliedDiscounts",
-                column: "OrderId");
+                column: "OrderId");*/
 
             migrationBuilder.CreateIndex(
                 name: "IX_AppliedDiscounts_PromotionRuleId",

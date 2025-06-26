@@ -41,10 +41,10 @@ namespace OnlineShopping.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.CreateIndex(
+            /*migrationBuilder.CreateIndex(
                 name: "IX_Orders_CustomerId",
                 table: "Orders",
-                column: "CustomerId");
+                column: "CustomerId");*/
 
             migrationBuilder.CreateIndex(
                 name: "IX_OrderStatusHistory_OrderId",
@@ -70,9 +70,9 @@ namespace OnlineShopping.Migrations
             migrationBuilder.DropTable(
                 name: "OrderStatusHistory");
 
-            migrationBuilder.DropIndex(
+            /*migrationBuilder.DropIndex(
                 name: "IX_Orders_CustomerId",
-                table: "Orders");
+                table: "Orders");*/
 
             migrationBuilder.DropColumn(
                 name: "LastStatusUpdate",

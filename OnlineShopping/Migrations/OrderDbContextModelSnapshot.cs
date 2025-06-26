@@ -17,6 +17,38 @@ namespace OnlineShopping.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.6");
 
+            modelBuilder.Entity("OnlineShopping.Models.AppliedDiscount", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("AppliedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PromotionRuleId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PromotionSnapshot")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("PromotionRuleId");
+
+                    b.ToTable("AppliedDiscounts");
+                });
+
             modelBuilder.Entity("OnlineShopping.Models.Customer", b =>
                 {
                     b.Property<int>("Id")
@@ -39,7 +71,7 @@ namespace OnlineShopping.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Customers", (string)null);
+                    b.ToTable("Customers");
                 });
 
             modelBuilder.Entity("OnlineShopping.Models.Order", b =>
@@ -68,10 +100,17 @@ namespace OnlineShopping.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
 
-                    b.Property<decimal>("TotalAmount")
+                    b.Property<decimal>("SubTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("TotalDiscount")
+                        .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
 
                     b.ToTable("Orders");
                 });
@@ -154,7 +193,7 @@ namespace OnlineShopping.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Products", (string)null);
+                    b.ToTable("Products");
 
                     b.HasData(
                         new
@@ -175,6 +214,223 @@ namespace OnlineShopping.Migrations
                             Name = "Keyboard",
                             Price = 79.99m
                         });
+                });
+
+            modelBuilder.Entity("OnlineShopping.Models.PromotionRule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("BuyQuantity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Criteria")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CriteriaValue")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("DiscountValue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("GetQuantity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsCombinable")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("MaxUsesPerCustomer")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal?>("MinimumOrderAmount")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("MinimumOrderCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal?>("MinimumTotalSpent")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PromotionRules");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Criteria = 0,
+                            CriteriaValue = "VIP",
+                            Description = "20% discount for VIP customers",
+                            DiscountValue = 20m,
+                            IsActive = true,
+                            IsCombinable = true,
+                            Name = "VIP 20% Discount",
+                            Priority = 1,
+                            StartDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Type = 0
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Criteria = 0,
+                            CriteriaValue = "Premium",
+                            Description = "10% discount for Premium customers",
+                            DiscountValue = 10m,
+                            IsActive = true,
+                            IsCombinable = true,
+                            Name = "Premium 10% Discount",
+                            Priority = 2,
+                            StartDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Type = 0
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Criteria = 5,
+                            Description = "$50 off for first-time customers on orders over $200",
+                            DiscountValue = 50m,
+                            IsActive = true,
+                            IsCombinable = true,
+                            MinimumOrderAmount = 200m,
+                            Name = "First Time Customer Discount",
+                            Priority = 3,
+                            StartDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Type = 1
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Criteria = 1,
+                            Description = "15% off for customers with 5+ orders",
+                            DiscountValue = 15m,
+                            IsActive = true,
+                            IsCombinable = true,
+                            MinimumOrderCount = 5,
+                            Name = "Loyal Customer Reward",
+                            Priority = 2,
+                            StartDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Type = 0
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Criteria = 2,
+                            Description = "$100 off for customers who have spent over $5000",
+                            DiscountValue = 100m,
+                            IsActive = true,
+                            IsCombinable = true,
+                            MaxUsesPerCustomer = 1,
+                            MinimumTotalSpent = 5000m,
+                            Name = "Big Spender Bonus",
+                            Priority = 1,
+                            StartDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            Type = 1
+                        });
+                });
+
+            modelBuilder.Entity("OnlineShopping.Models.AppliedDiscount", b =>
+                {
+                    b.HasOne("OnlineShopping.Models.Order", "Order")
+                        .WithMany("AppliedDiscounts")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OnlineShopping.Models.PromotionRule", "PromotionRule")
+                        .WithMany("AppliedDiscounts")
+                        .HasForeignKey("PromotionRuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("PromotionRule");
+                });
+
+            modelBuilder.Entity("OnlineShopping.Models.Order", b =>
+                {
+                    b.HasOne("OnlineShopping.Models.Customer", "Customer")
+                        .WithMany("Orders")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Customer");
+                });
+
+            modelBuilder.Entity("OnlineShopping.Models.OrderItem", b =>
+                {
+                    b.HasOne("OnlineShopping.Models.Order", "Order")
+                        .WithMany("OrderItems")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OnlineShopping.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("OnlineShopping.Models.OrderStatusHistory", b =>
+                {
+                    b.HasOne("OnlineShopping.Models.Order", "Order")
+                        .WithMany("StatusHistory")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("OnlineShopping.Models.Customer", b =>
+                {
+                    b.Navigation("Orders");
+                });
+
+            modelBuilder.Entity("OnlineShopping.Models.Order", b =>
+                {
+                    b.Navigation("AppliedDiscounts");
+
+                    b.Navigation("OrderItems");
+
+                    b.Navigation("StatusHistory");
+                });
+
+            modelBuilder.Entity("OnlineShopping.Models.PromotionRule", b =>
+                {
+                    b.Navigation("AppliedDiscounts");
                 });
 #pragma warning restore 612, 618
         }
