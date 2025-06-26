@@ -65,7 +65,7 @@ namespace OnlineShopping.Services
         public IEnumerable<OrderStatus> GetAllowedTransitions(OrderStatus currentStatus)
         {
             return _allowedTransitions.ContainsKey(currentStatus)
-                ? _allowedTransitions[currentStatus]
+                ? _allowedTransitions[currentStatus].ToList()
                 : Enumerable.Empty<OrderStatus>();
         }
     }
