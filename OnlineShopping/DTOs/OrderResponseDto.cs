@@ -8,19 +8,35 @@ namespace OnlineShopping.DTOs
         public string OrderNumber { get; set; } = string.Empty;
         public int CustomerId { get; set; }
         public string CustomerName { get; set; } = string.Empty;
-        public CustomerSegment CustomerSegment { get; set; }
+        public string CustomerSegment { get; set; } = string.Empty;
         public DateTime OrderDate { get; set; }
         public OrderStatus Status { get; set; }
-        public decimal SubtotalAmount { get; set; }
+        public DateTime? LastStatusUpdate { get; set; }
+
+        // Financial details
+        public decimal SubTotal { get; set; }
         public decimal TotalDiscount { get; set; }
+        public decimal ShippingCost { get; set; }
         public decimal TotalAmount { get; set; }
-        public List<AppliedDiscountDto> AppliedDiscounts { get; set; } = new List<AppliedDiscountDto>();
+
+        // Order items
+        public List<OrderItemResponseDto> OrderItems { get; set; } = new();
+
+        // Applied discounts
+        public List<AppliedDiscountDto> AppliedDiscounts { get; set; } = new();
+
+        // Status history
+        public List<OrderStatusHistoryDto> StatusHistory { get; set; } = new();
+        public List<OrderStatus> AllowedTransitions { get; set; } = new();
     }
 
-    public class AppliedDiscountDto
+    public class OrderStatusHistoryDto
     {
-        public string PromotionName { get; set; } = string.Empty;
-        public string PromotionDescription { get; set; } = string.Empty;
-        public decimal DiscountAmount { get; set; }
+        public int Id { get; set; }
+        public OrderStatus PreviousStatus { get; set; }
+        public OrderStatus NewStatus { get; set; }
+        public DateTime ChangedAt { get; set; }
+        public string? ChangedBy { get; set; }
+        public string? Comment { get; set; }
     }
 }

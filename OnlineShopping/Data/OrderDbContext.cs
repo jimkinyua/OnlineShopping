@@ -12,7 +12,9 @@ namespace OnlineShopping.Data
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<Product> Products { get; set; }
-        public DbSet<Promotion> Promotions { get; set; }
+        public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<OrderStatusHistory> OrderStatusHistory { get; set; }
+        public DbSet<PromotionRule> PromotionRules { get; set; }
         public DbSet<AppliedDiscount> AppliedDiscounts { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -26,64 +28,124 @@ namespace OnlineShopping.Data
                 new Product { Id = 3, Name = "Keyboard", Price = 79.99m }
             );
 
-            // Fixed dates for promotions to avoid dynamic DateTime.UtcNow
-            var startDate = new DateTime(2023, 1, 1);
-            var endDate = new DateTime(2024, 1, 1);
+            // Configure relationships
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(oi => oi.Order)
+                .WithMany(o => o.OrderItems)
+                .HasForeignKey(oi => oi.OrderId);
 
-            // Seed data for promotions
-            modelBuilder.Entity<Promotion>().HasData(
-                new Promotion
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(oi => oi.Product)
+                .WithMany()
+                .HasForeignKey(oi => oi.ProductId);
+
+            modelBuilder.Entity<AppliedDiscount>()
+                .HasOne(ad => ad.Order)
+                .WithMany(o => o.AppliedDiscounts)
+                .HasForeignKey(ad => ad.OrderId);
+
+            modelBuilder.Entity<AppliedDiscount>()
+                .HasOne(ad => ad.PromotionRule)
+                .WithMany(pr => pr.AppliedDiscounts)
+                .HasForeignKey(ad => ad.PromotionRuleId);
+
+            // Configure decimal precision
+            modelBuilder.Entity<Order>()
+                .Property(o => o.SubTotal)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Order>()
+                .Property(o => o.TotalDiscount)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Order>()
+                .Property(o => o.ShippingCost)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<OrderItem>()
+                .Property(oi => oi.UnitPrice)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<OrderItem>()
+                .Property(oi => oi.ItemDiscount)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<PromotionRule>()
+                .Property(pr => pr.DiscountValue)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<AppliedDiscount>()
+                .Property(ad => ad.DiscountAmount)
+                .HasPrecision(18, 2);
+
+            // Seed initial promotion rules with fixed date
+            var seedDate = new DateTime(2024, 1, 1);
+            modelBuilder.Entity<PromotionRule>().HasData(
+                new PromotionRule
                 {
                     Id = 1,
-                    Name = "VIP 20% Off",
+                    Name = "VIP 20% Discount",
                     Description = "20% discount for VIP customers",
                     Type = PromotionType.PercentageDiscount,
+                    Criteria = PromotionCriteria.CustomerSegment,
                     DiscountValue = 20,
-                    TargetSegment = CustomerSegment.VIP,
-                    StartDate = startDate,
-                    EndDate = endDate,
+                    CriteriaValue = "VIP",
+                    StartDate = seedDate,
                     IsActive = true,
-                    Priority = 10
+                    Priority = 1
                 },
-                new Promotion
+                new PromotionRule
                 {
                     Id = 2,
-                    Name = "Premium 10% Off",
+                    Name = "Premium 10% Discount",
                     Description = "10% discount for Premium customers",
                     Type = PromotionType.PercentageDiscount,
+                    Criteria = PromotionCriteria.CustomerSegment,
                     DiscountValue = 10,
-                    TargetSegment = CustomerSegment.Premium,
-                    StartDate = startDate,
-                    EndDate = endDate,
+                    CriteriaValue = "Premium",
+                    StartDate = seedDate,
                     IsActive = true,
-                    Priority = 5
+                    Priority = 2
                 },
-                new Promotion
+                new PromotionRule
                 {
                     Id = 3,
-                    Name = "Loyalty Discount",
-                    Description = "$50 off for customers with 5+ orders",
+                    Name = "First Time Customer Discount",
+                    Description = "$50 off for first-time customers on orders over $200",
                     Type = PromotionType.FixedAmountDiscount,
+                    Criteria = PromotionCriteria.FirstTimeCustomer,
                     DiscountValue = 50,
-                    MinimumOrderCount = 5,
-                    MinimumPurchaseAmount = 200,
-                    StartDate = startDate,
-                    EndDate = endDate,
+                    MinimumOrderAmount = 200,
+                    StartDate = seedDate,
                     IsActive = true,
-                    Priority = 8
+                    Priority = 3
                 },
-                new Promotion
+                new PromotionRule
                 {
                     Id = 4,
-                    Name = "Big Spender Discount",
-                    Description = "15% off orders over $500",
+                    Name = "Loyal Customer Reward",
+                    Description = "15% off for customers with 5+ orders",
                     Type = PromotionType.PercentageDiscount,
+                    Criteria = PromotionCriteria.OrderCount,
                     DiscountValue = 15,
-                    MinimumPurchaseAmount = 500,
-                    StartDate = startDate,
-                    EndDate = endDate,
+                    MinimumOrderCount = 5,
+                    StartDate = seedDate,
                     IsActive = true,
-                    Priority = 7
+                    Priority = 2
+                },
+                new PromotionRule
+                {
+                    Id = 5,
+                    Name = "Big Spender Bonus",
+                    Description = "$100 off for customers who have spent over $5000",
+                    Type = PromotionType.FixedAmountDiscount,
+                    Criteria = PromotionCriteria.TotalSpent,
+                    DiscountValue = 100,
+                    MinimumTotalSpent = 5000,
+                    StartDate = seedDate,
+                    IsActive = true,
+                    Priority = 1,
+                    MaxUsesPerCustomer = 1
                 }
             );
         }

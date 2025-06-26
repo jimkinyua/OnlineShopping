@@ -7,6 +7,7 @@ namespace OnlineShopping.Models
         PercentageDiscount,
         FixedAmountDiscount,
         BuyXGetY,
+        FreeShipping,
         MinimumPurchaseDiscount
     }
 

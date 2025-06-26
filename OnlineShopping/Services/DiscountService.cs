@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using OnlineShopping.Data;
 using OnlineShopping.Models;
+using System.Text.Json;
 
 namespace OnlineShopping.Services
 {
@@ -13,106 +14,235 @@ namespace OnlineShopping.Services
             _context = context;
         }
 
-        public async Task<List<AppliedDiscount>> CalculateDiscountsAsync(int customerId, decimal subtotalAmount)
+        public async Task<List<PromotionRule>> GetApplicablePromotionsAsync(int customerId, decimal orderSubTotal)
         {
-            var appliedDiscounts = new List<AppliedDiscount>();
-
-            // Get customer with their segment
             var customer = await _context.Customers.FindAsync(customerId);
-            if (customer == null)
-            {
-                return appliedDiscounts;
-            }
+            if (customer == null) return new List<PromotionRule>();
 
-            // Get customer's order history count
-            var orderCount = await _context.Orders
-                .Where(o => o.CustomerId == customerId && o.Status != OrderStatus.Cancelled)
-                .CountAsync();
-
-            // Get all active promotions
-            var now = DateTime.UtcNow;
-            var activePromotions = await _context.Promotions
-                .Where(p => p.IsActive && p.StartDate <= now && p.EndDate >= now)
-                .OrderByDescending(p => p.Priority)
+            var activePromotions = await _context.PromotionRules
+                .Where(p => p.IsActive && p.StartDate <= DateTime.UtcNow &&
+                           (p.EndDate == null || p.EndDate >= DateTime.UtcNow))
+                .OrderBy(p => p.Priority)
                 .ToListAsync();
 
-            decimal remainingAmount = subtotalAmount;
+            var applicablePromotions = new List<PromotionRule>();
 
             foreach (var promotion in activePromotions)
             {
-                // Check if promotion applies to this customer
-                if (!IsPromotionApplicable(promotion, customer, orderCount, subtotalAmount))
+                if (await IsPromotionApplicableAsync(customer, promotion, orderSubTotal))
                 {
-                    continue;
+                    applicablePromotions.Add(promotion);
                 }
+            }
 
-                decimal discountAmount = CalculateDiscountAmount(promotion, remainingAmount);
+            return applicablePromotions;
+        }
 
-                if (discountAmount > 0)
+        public async Task<(decimal totalDiscount, List<AppliedDiscount> appliedDiscounts)> CalculateDiscountsAsync(
+            int customerId,
+            decimal orderSubTotal,
+            List<OrderItem> orderItems)
+        {
+            var applicablePromotions = await GetApplicablePromotionsAsync(customerId, orderSubTotal);
+            var appliedDiscounts = new List<AppliedDiscount>();
+            decimal totalDiscount = 0;
+
+            // Group promotions by combinability
+            var nonCombinablePromotions = applicablePromotions.Where(p => !p.IsCombinable).ToList();
+            var combinablePromotions = applicablePromotions.Where(p => p.IsCombinable).ToList();
+
+            // If there are non-combinable promotions, choose the best one
+            if (nonCombinablePromotions.Any())
+            {
+                var bestPromotion = await GetBestPromotionAsync(nonCombinablePromotions, orderSubTotal, orderItems);
+                if (bestPromotion != null)
                 {
-                    appliedDiscounts.Add(new AppliedDiscount
+                    var discount = CalculatePromotionDiscount(bestPromotion, orderSubTotal, orderItems);
+                    if (discount > 0)
                     {
-                        PromotionId = promotion.Id,
-                        Promotion = promotion,
-                        DiscountAmount = discountAmount,
-                        AppliedAt = DateTime.UtcNow
-                    });
-
-                    // For cumulative discounts, reduce the remaining amount
-                    remainingAmount -= discountAmount;
+                        appliedDiscounts.Add(CreateAppliedDiscount(bestPromotion, discount));
+                        totalDiscount += discount;
+                    }
+                }
+            }
+            else
+            {
+                // Apply all combinable promotions
+                foreach (var promotion in combinablePromotions)
+                {
+                    var discount = CalculatePromotionDiscount(promotion, orderSubTotal - totalDiscount, orderItems);
+                    if (discount > 0)
+                    {
+                        appliedDiscounts.Add(CreateAppliedDiscount(promotion, discount));
+                        totalDiscount += discount;
+                    }
                 }
             }
 
-            return appliedDiscounts;
+            return (totalDiscount, appliedDiscounts);
         }
 
-        public Task<decimal> GetTotalDiscountAmountAsync(List<AppliedDiscount> appliedDiscounts)
+        private async Task<bool> IsPromotionApplicableAsync(Customer customer, PromotionRule promotion, decimal orderSubTotal)
         {
-            var total = appliedDiscounts.Sum(d => d.DiscountAmount);
-            return Task.FromResult(total);
+            // Check maximum uses per customer
+            if (promotion.MaxUsesPerCustomer.HasValue)
+            {
+                var usageCount = await GetPromotionUsageCountAsync(customer.Id, promotion.Id);
+                if (usageCount >= promotion.MaxUsesPerCustomer.Value)
+                {
+                    return false;
+                }
+            }
+
+            // Check minimum order amount
+            if (promotion.MinimumOrderAmount.HasValue && orderSubTotal < promotion.MinimumOrderAmount.Value)
+            {
+                return false;
+            }
+
+            // Check criteria
+            switch (promotion.Criteria)
+            {
+                case PromotionCriteria.CustomerSegment:
+                    return promotion.CriteriaValue == customer.Segment.ToString();
+
+                case PromotionCriteria.OrderCount:
+                    if (promotion.MinimumOrderCount.HasValue)
+                    {
+                        var orderCount = await GetCustomerOrderCountAsync(customer.Id);
+                        return orderCount >= promotion.MinimumOrderCount.Value;
+                    }
+                    break;
+
+                case PromotionCriteria.TotalSpent:
+                    if (promotion.MinimumTotalSpent.HasValue)
+                    {
+                        var totalSpent = await GetCustomerTotalSpentAsync(customer.Id);
+                        return totalSpent >= promotion.MinimumTotalSpent.Value;
+                    }
+                    break;
+
+                case PromotionCriteria.FirstTimeCustomer:
+                    return await IsFirstTimeCustomerAsync(customer.Id);
+
+                case PromotionCriteria.OrderAmount:
+                    return true; // Already checked with MinimumOrderAmount
+
+                case PromotionCriteria.SpecificProduct:
+                    // This would need to check if specific products are in the order
+                    // For now, returning true as we don't have the order items context here
+                    return true;
+            }
+
+            return false;
         }
 
-        private bool IsPromotionApplicable(Promotion promotion, Customer customer, int orderCount, decimal subtotalAmount)
-        {
-            // Check customer segment
-            if (promotion.TargetSegment.HasValue && promotion.TargetSegment.Value != customer.Segment)
-            {
-                return false;
-            }
-
-            // Check minimum order count
-            if (promotion.MinimumOrderCount.HasValue && orderCount < promotion.MinimumOrderCount.Value)
-            {
-                return false;
-            }
-
-            // Check minimum purchase amount
-            if (promotion.MinimumPurchaseAmount.HasValue && subtotalAmount < promotion.MinimumPurchaseAmount.Value)
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        private decimal CalculateDiscountAmount(Promotion promotion, decimal amount)
+        private decimal CalculatePromotionDiscount(PromotionRule promotion, decimal baseAmount, List<OrderItem> orderItems)
         {
             switch (promotion.Type)
             {
                 case PromotionType.PercentageDiscount:
-                    return Math.Round(amount * (promotion.DiscountValue / 100), 2);
+                    return Math.Round(baseAmount * (promotion.DiscountValue / 100), 2);
 
                 case PromotionType.FixedAmountDiscount:
-                    // Fixed discount cannot exceed the amount
-                    return Math.Min(promotion.DiscountValue, amount);
+                    return Math.Min(promotion.DiscountValue, baseAmount);
 
-                case PromotionType.MinimumPurchaseDiscount:
-                    // Similar to percentage but only applies if minimum is met
-                    return Math.Round(amount * (promotion.DiscountValue / 100), 2);
+                case PromotionType.FreeShipping:
+                    // This would be handled separately in the order calculation
+                    return 0;
+
+                case PromotionType.BuyXGetY:
+                    // This would need more complex logic based on order items
+                    // For now, returning 0
+                    return 0;
 
                 default:
                     return 0;
             }
+        }
+
+        private async Task<PromotionRule?> GetBestPromotionAsync(
+            List<PromotionRule> promotions,
+            decimal orderSubTotal,
+            List<OrderItem> orderItems)
+        {
+            decimal maxDiscount = 0;
+            PromotionRule? bestPromotion = null;
+
+            foreach (var promotion in promotions)
+            {
+                var discount = CalculatePromotionDiscount(promotion, orderSubTotal, orderItems);
+                if (discount > maxDiscount)
+                {
+                    maxDiscount = discount;
+                    bestPromotion = promotion;
+                }
+            }
+
+            return bestPromotion;
+        }
+
+        private AppliedDiscount CreateAppliedDiscount(PromotionRule promotion, decimal discountAmount)
+        {
+            return new AppliedDiscount
+            {
+                PromotionRuleId = promotion.Id,
+                DiscountAmount = discountAmount,
+                PromotionSnapshot = JsonSerializer.Serialize(new
+                {
+                    promotion.Name,
+                    promotion.Description,
+                    promotion.Type,
+                    promotion.DiscountValue
+                }),
+                AppliedAt = DateTime.UtcNow
+            };
+        }
+
+        public async Task<bool> IsPromotionValidForCustomerAsync(int customerId, int promotionRuleId)
+        {
+            var customer = await _context.Customers.FindAsync(customerId);
+            var promotion = await _context.PromotionRules.FindAsync(promotionRuleId);
+
+            if (customer == null || promotion == null || !promotion.IsActive)
+            {
+                return false;
+            }
+
+            return await IsPromotionApplicableAsync(customer, promotion, 0);
+        }
+
+        public async Task<int> GetCustomerOrderCountAsync(int customerId)
+        {
+            return await _context.Orders
+                .Where(o => o.CustomerId == customerId && o.Status != OrderStatus.Cancelled)
+                .CountAsync();
+        }
+
+        public async Task<decimal> GetCustomerTotalSpentAsync(int customerId)
+        {
+            var orders = await _context.Orders
+                .Where(o => o.CustomerId == customerId &&
+                           o.Status != OrderStatus.Cancelled)
+                .ToListAsync();
+
+            return orders.Sum(o => o.TotalAmount);
+        }
+
+        public async Task<bool> IsFirstTimeCustomerAsync(int customerId)
+        {
+            return !await _context.Orders
+                .AnyAsync(o => o.CustomerId == customerId &&
+                              o.Status != OrderStatus.Cancelled);
+        }
+
+        public async Task<int> GetPromotionUsageCountAsync(int customerId, int promotionRuleId)
+        {
+            return await _context.AppliedDiscounts
+                .Include(ad => ad.Order)
+                .Where(ad => ad.Order.CustomerId == customerId &&
+                            ad.PromotionRuleId == promotionRuleId)
+                .CountAsync();
         }
     }
 }
