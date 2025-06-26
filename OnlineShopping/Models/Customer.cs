@@ -14,5 +14,7 @@ namespace OnlineShopping.Models
         public string Email { get; set; } = string.Empty;
         public CustomerSegment Segment { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public List<Order> Orders { get; set; } = new List<Order>();
+
     }
 }
