@@ -21,7 +21,7 @@ namespace OnlineShopping
             builder.Services.AddScoped<ICustomerManagement, CustomerManagement>();
             builder.Services.AddScoped<IOrderStatusService, OrderStatusService>();
             builder.Services.AddScoped<IOrderStatusTransitionValidator, OrderStatusTransitionValidator>();
-            builder.Services.AddScoped<OrderStatusTransitionValidator>(); // Also register the concrete type for DI
+            builder.Services.AddScoped<OrderStatusTransitionValidator>();
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
