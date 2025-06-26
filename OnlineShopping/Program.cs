@@ -12,9 +12,14 @@ namespace OnlineShopping
 
             builder.Services.AddDbContext<OrderDbContext>(options => options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+            // Add memory caching
+            builder.Services.AddMemoryCache();
+
             // custom services
             builder.Services.AddScoped<IOrderManagement, OrderManagement>();
             builder.Services.AddScoped<ICustomerManagement, CustomerManagement>();
+            builder.Services.AddScoped<IOrderStatusService, OrderStatusService>();
+            builder.Services.AddScoped<IOrderStatusTransitionValidator, OrderStatusTransitionValidator>();
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
@@ -26,7 +31,7 @@ namespace OnlineShopping
             using (var scope = app.Services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<OrderDbContext>();
-                dbContext.Database.EnsureCreated();
+                //dbContext.Database.EnsureCreated();
                 dbContext.Database.Migrate();
             }
 
