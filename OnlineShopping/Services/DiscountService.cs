@@ -23,6 +23,7 @@ namespace OnlineShopping.Services
                 .Where(p => p.IsActive && p.StartDate <= DateTime.UtcNow &&
                            (p.EndDate == null || p.EndDate >= DateTime.UtcNow))
                 .OrderBy(p => p.Priority)
+                .ThenBy(p => p.Id)
                 .ToListAsync();
 
             var applicablePromotions = new List<PromotionRule>();
@@ -58,11 +59,9 @@ namespace OnlineShopping.Services
                 if (bestPromotion != null)
                 {
                     var discount = CalculatePromotionDiscount(bestPromotion, orderSubTotal, orderItems);
-                    if (discount > 0)
-                    {
-                        appliedDiscounts.Add(CreateAppliedDiscount(bestPromotion, discount));
-                        totalDiscount += discount;
-                    }
+                    // Always create the applied discount record, even if discount is 0
+                    appliedDiscounts.Add(CreateAppliedDiscount(bestPromotion, discount));
+                    totalDiscount += discount;
                 }
             }
             else
@@ -71,11 +70,9 @@ namespace OnlineShopping.Services
                 foreach (var promotion in combinablePromotions)
                 {
                     var discount = CalculatePromotionDiscount(promotion, orderSubTotal - totalDiscount, orderItems);
-                    if (discount > 0)
-                    {
-                        appliedDiscounts.Add(CreateAppliedDiscount(promotion, discount));
-                        totalDiscount += discount;
-                    }
+                    // Always create the applied discount record, even if discount is 0
+                    appliedDiscounts.Add(CreateAppliedDiscount(promotion, discount));
+                    totalDiscount += discount;
                 }
             }
 
@@ -112,7 +109,7 @@ namespace OnlineShopping.Services
                         var orderCount = await GetCustomerOrderCountAsync(customer.Id);
                         return orderCount >= promotion.MinimumOrderCount.Value;
                     }
-                    break;
+                    return true; // No order count requirement
 
                 case PromotionCriteria.TotalSpent:
                     if (promotion.MinimumTotalSpent.HasValue)
@@ -120,7 +117,7 @@ namespace OnlineShopping.Services
                         var totalSpent = await GetCustomerTotalSpentAsync(customer.Id);
                         return totalSpent >= promotion.MinimumTotalSpent.Value;
                     }
-                    break;
+                    return true; // No total spent requirement
 
                 case PromotionCriteria.FirstTimeCustomer:
                     return await IsFirstTimeCustomerAsync(customer.Id);
@@ -132,19 +129,26 @@ namespace OnlineShopping.Services
                     // This would need to check if specific products are in the order
                     // For now, returning true as we don't have the order items context here
                     return true;
-            }
 
-            return false;
+                default:
+                    return false; // Unknown criteria
+            }
         }
 
         private decimal CalculatePromotionDiscount(PromotionRule promotion, decimal baseAmount, List<OrderItem> orderItems)
         {
+            // For percentage discounts, even if baseAmount is 0, the discount would be 0
+            // For fixed discounts, we shouldn't apply them if baseAmount is 0
+
             switch (promotion.Type)
             {
                 case PromotionType.PercentageDiscount:
                     return Math.Round(baseAmount * (promotion.DiscountValue / 100), 2);
 
                 case PromotionType.FixedAmountDiscount:
+                    // Don't apply fixed discount if base amount is 0 or negative
+                    if (baseAmount <= 0)
+                        return 0;
                     return Math.Min(promotion.DiscountValue, baseAmount);
 
                 case PromotionType.FreeShipping:
@@ -192,7 +196,7 @@ namespace OnlineShopping.Services
                 {
                     promotion.Name,
                     promotion.Description,
-                    promotion.Type,
+                    Type = promotion.Type.ToString(),
                     promotion.DiscountValue
                 }),
                 AppliedAt = DateTime.UtcNow
