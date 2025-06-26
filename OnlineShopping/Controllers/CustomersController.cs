@@ -1,11 +1,17 @@
 using Microsoft.AspNetCore.Mvc;
 using OnlineShopping.DTOs;
 using OnlineShopping.Services;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace OnlineShopping.Controllers
 {
+    /// <summary>
+    /// Manages customer operations including creation, retrieval, and customer information management
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
+    [Produces("application/json")]
+    [Consumes("application/json")]
     public class CustomersController : ControllerBase
     {
         private readonly ICustomerManagement _customerManagement;
@@ -15,7 +21,22 @@ namespace OnlineShopping.Controllers
             _customerManagement = customerManagement;
         }
 
+        /// <summary>
+        /// Creates a new customer
+        /// </summary>
+        /// <param name="createCustomerDto">Customer creation data</param>
+        /// <returns>Newly created customer information</returns>
+        /// <response code="201">Customer successfully created</response>
+        /// <response code="400">Invalid customer data provided</response>
         [HttpPost]
+        [SwaggerOperation(
+            Summary = "Create a new customer",
+            Description = "Creates a new customer with the provided information and assigns them to a customer segment",
+            OperationId = "CreateCustomer",
+            Tags = new[] { "Customers" }
+        )]
+        [ProducesResponseType(typeof(CustomerResponseDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateCustomer([FromBody] CreateCustomerDto createCustomerDto)
         {
             if (!ModelState.IsValid)
@@ -37,8 +58,23 @@ namespace OnlineShopping.Controllers
             return CreatedAtAction(nameof(GetCustomerById), new { id = customer.Id }, response);
         }
 
+        /// <summary>
+        /// Retrieves a specific customer by ID
+        /// </summary>
+        /// <param name="id">Customer ID</param>
+        /// <returns>Customer information</returns>
+        /// <response code="200">Customer found and returned</response>
+        /// <response code="404">Customer not found</response>
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetCustomerById(int id)
+        [SwaggerOperation(
+            Summary = "Get customer by ID",
+            Description = "Retrieves detailed information about a specific customer",
+            OperationId = "GetCustomerById",
+            Tags = new[] { "Customers" }
+        )]
+        [ProducesResponseType(typeof(CustomerResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetCustomerById([FromRoute] int id)
         {
             var customer = await _customerManagement.GetCustomerByIdAsync(id);
 
@@ -59,7 +95,19 @@ namespace OnlineShopping.Controllers
             return Ok(response);
         }
 
+        /// <summary>
+        /// Retrieves all customers
+        /// </summary>
+        /// <returns>List of all customers</returns>
+        /// <response code="200">List of customers returned successfully</response>
         [HttpGet]
+        [SwaggerOperation(
+            Summary = "Get all customers",
+            Description = "Retrieves a list of all customers in the system",
+            OperationId = "GetAllCustomers",
+            Tags = new[] { "Customers" }
+        )]
+        [ProducesResponseType(typeof(List<CustomerResponseDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllCustomers()
         {
             var customers = await _customerManagement.GetAllCustomersAsync();
